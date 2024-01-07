@@ -231,3 +231,9 @@ class Spinner:
             sys.exit(1)
 
 # End ofloader/spinner class
+
+
+# Instantiating the spinner/loader class
+spinner = Spinner()
+
+
