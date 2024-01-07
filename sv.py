@@ -152,3 +152,9 @@ def helper():
         print("\t"+vul_info('m')+"  : Attacker may correlate multiple vulnerabilities of this type to launch a sophisticated attack.")
         print("\t"+vul_info('l')+"     : Not a serious issue, but it is recommended to tend to the finding.")
         print("\t"+vul_info('i')+"    : Not classified as a vulnerability, simply an useful informational alert to be considered.\n")
+
+
+# Clears Line
+def clear():
+        sys.stdout.write("\033[F")
+        sys.stdout.write("\033[K") #clears until EOL
