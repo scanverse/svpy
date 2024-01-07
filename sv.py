@@ -1341,3 +1341,24 @@ tools_fix = [
                     [51, "Cyber Criminals mainly target this service as it is very easier for them to perform a remote attack by running exploits. WannaCry Ransomware is one such example.",
                             "Exposing SMB Service to the outside world is a bad idea, it is recommended to install latest patches for the service in order not to get compromised. The following resource provides a detailed information on SMB Hardening concepts. https://kb.iweb.com/hc/en-us/articles/115000274491-Securing-Windows-SMB-and-NetBios-NetBT-Services"]
             ]
+
+
+# Tool Set
+tools_precheck = [
+                    ["wapiti"], ["whatweb"], ["nmap"], ["golismero"], ["host"], ["wget"], ["uniscan"], ["wafw00f"], ["dirb"], ["davtest"], ["theHarvester"], ["xsser"], ["dnsrecon"],["fierce"], ["dnswalk"], ["whois"], ["sslyze"], ["lbd"], ["golismero"], ["dnsenum"],["dmitry"], ["davtest"], ["nikto"], ["dnsmap"], ["amass"]
+                 ]
+
+def get_parser():
+
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('-h', '--help', action='store_true', 
+                        help='Show help message and exit.')
+    parser.add_argument('-u', '--update', action='store_true', 
+                        help='Update RapidScan.')
+    parser.add_argument('-s', '--skip', action='append', default=[],
+                        help='Skip some tools', choices=[t[0] for t in tools_precheck])
+    parser.add_argument('-n', '--nospinner', action='store_true', 
+                        help='Disable the idle loader/spinner.')
+    parser.add_argument('target', nargs='?', metavar='URL', help='URL to scan.', default='', type=str)
+    return parser
+
