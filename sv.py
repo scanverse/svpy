@@ -1369,3 +1369,230 @@ tool_names, tool_cmd, tool_resp, tool_status = zip(*scan_shuffle)
 tool_checks = (len(tool_names) + len(tool_resp) + len(tool_status)) / 3 # Cross verification incase, breaks.
 tool_checks = round(tool_checks)
 # Shuffling Scan Order (ends)
+
+# Tool Head Pointer: (can be increased but certain tools will be skipped)
+tool = 0
+
+# Run Test
+runTest = 1
+
+# For accessing list/dictionary elements
+arg1 = 0
+arg2 = 1
+arg3 = 2
+arg4 = 3
+arg5 = 4
+arg6 = 5
+
+# Detected Vulnerabilities [will be dynamically populated]
+rs_vul_list = list()
+rs_vul_num = 0
+rs_vul = 0
+
+# Total Time Elapsed
+rs_total_elapsed = 0
+
+# Tool Pre Checker
+rs_avail_tools = 0
+
+# Checks Skipped
+rs_skipped_checks = 0
+
+if len(sys.argv) == 1:
+    logo()
+    helper()
+    sys.exit(1)
+
+args_namespace = get_parser().parse_args()
+
+if args_namespace.nospinner:
+    spinner.disabled = True
+
+if args_namespace.help or (not args_namespace.update \
+    and not args_namespace.target):
+    logo()
+    helper()
+elif args_namespace.update:
+    logo()
+    print("RapidScan is updating....Please wait.\n")
+    spinner.start()
+    # Checking internet connectivity first...
+    rs_internet_availability = check_internet()
+    if rs_internet_availability == 0:
+        print("\t"+ bcolors.BG_ERR_TXT + "There seems to be some problem connecting to the internet. Please try again or later." +bcolors.ENDC)
+        spinner.stop()
+        sys.exit(1)
+    cmd = 'sha1sum rapidscan.py | grep .... | cut -c 1-40'
+    oldversion_hash = subprocess.check_output(cmd, shell=True)
+    oldversion_hash = oldversion_hash.strip()
+    os.system('wget -N https://raw.githubusercontent.com/skavngr/rapidscan/master/rapidscan.py -O rapidscan.py > /dev/null 2>&1')
+    newversion_hash = subprocess.check_output(cmd, shell=True)
+    newversion_hash = newversion_hash.strip()
+    if oldversion_hash == newversion_hash :
+        clear()
+        print("\t"+ bcolors.OKBLUE +"You already have the latest version of RapidScan." + bcolors.ENDC)
+    else:
+        clear()
+        print("\t"+ bcolors.OKGREEN +"RapidScan successfully updated to the latest version." +bcolors.ENDC)
+    spinner.stop()
+    sys.exit(1)
+
+elif args_namespace.target:
+
+    target = url_maker(args_namespace.target)
+    #target = args_namespace.target
+    os.system('rm /tmp/rapidscan* > /dev/null 2>&1') # Clearing previous scan files
+    os.system('clear')
+    os.system('setterm -cursor off')
+    logo()
+    print(bcolors.BG_HEAD_TXT+"[ Checking Available Security Scanning Tools Phase... Initiated. ]"+bcolors.ENDC)
+
+    unavail_tools_names = list()
+
+    while (rs_avail_tools < len(tools_precheck)):
+        precmd = str(tools_precheck[rs_avail_tools][arg1])
+        try:
+            p = subprocess.Popen([precmd], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=True)
+            output, err = p.communicate()
+            val = output + err
+        except:
+            print("\t"+bcolors.BG_ERR_TXT+"RapidScan was terminated abruptly..."+bcolors.ENDC)
+            sys.exit(1)
+        
+        # If the tool is not found or it's part of the --skip argument(s), disabling it
+        if b"not found" in val or tools_precheck[rs_avail_tools][arg1] in args_namespace.skip :
+            if b"not found" in val:
+                print("\t"+bcolors.OKBLUE+tools_precheck[rs_avail_tools][arg1]+bcolors.ENDC+bcolors.BADFAIL+"...unavailable."+bcolors.ENDC)
+            elif tools_precheck[rs_avail_tools][arg1] in args_namespace.skip :
+                print("\t"+bcolors.OKBLUE+tools_precheck[rs_avail_tools][arg1]+bcolors.ENDC+bcolors.BADFAIL+"...skipped."+bcolors.ENDC)
+            
+            for scanner_index, scanner_val in enumerate(tool_names):
+                if scanner_val[2] == tools_precheck[rs_avail_tools][arg1]:
+                    scanner_val[3] = 0 # disabling scanner as it's not available.
+                    unavail_tools_names.append(tools_precheck[rs_avail_tools][arg1])
+
+        else:
+            print("\t"+bcolors.OKBLUE+tools_precheck[rs_avail_tools][arg1]+bcolors.ENDC+bcolors.OKGREEN+"...available."+bcolors.ENDC)
+        rs_avail_tools = rs_avail_tools + 1
+        clear()
+    unavail_tools_names = list(set(unavail_tools_names))
+    if len(unavail_tools_names) == 0:
+        print("\t"+bcolors.OKGREEN+"All Scanning Tools are available. Complete vulnerability checks will be performed by RapidScan."+bcolors.ENDC)
+    else:
+        print("\t"+bcolors.WARNING+"Some of these tools "+bcolors.BADFAIL+str(unavail_tools_names)+bcolors.ENDC+bcolors.WARNING+" are unavailable or will be skipped. RapidScan will still perform the rest of the tests. Install these tools to fully utilize the functionality of RapidScan."+bcolors.ENDC)
+    print(bcolors.BG_ENDL_TXT+"[ Checking Available Security Scanning Tools Phase... Completed. ]"+bcolors.ENDC)
+    print("\n")
+    print(bcolors.BG_HEAD_TXT+"[ Preliminary Scan Phase Initiated... Loaded "+str(tool_checks)+" vulnerability checks. ]"+bcolors.ENDC)
+    #while (tool < 1):
+    while(tool < len(tool_names)):
+        print("["+tool_status[tool][arg3]+tool_status[tool][arg4]+"] Deploying "+str(tool+1)+"/"+str(tool_checks)+" | "+bcolors.OKBLUE+tool_names[tool][arg2]+bcolors.ENDC,)
+        if tool_names[tool][arg4] == 0:
+            print(bcolors.WARNING+"\nScanning Tool Unavailable. Skipping Test...\n"+bcolors.ENDC)
+            rs_skipped_checks = rs_skipped_checks + 1
+            tool = tool + 1
+            continue
+        try:
+            spinner.start()
+        except Exception as e:
+            print("\n")
+        scan_start = time.time()
+        temp_file = "/tmp/rapidscan_temp_"+tool_names[tool][arg1]
+        cmd = tool_cmd[tool][arg1]+target+tool_cmd[tool][arg2]+" > "+temp_file+" 2>&1"
+
+        try:
+            subprocess.check_output(cmd, shell=True)
+        except KeyboardInterrupt:
+            runTest = 0
+        except:
+            runTest = 1
+
+        if runTest == 1:
+                spinner.stop()
+                scan_stop = time.time()
+                elapsed = scan_stop - scan_start
+                rs_total_elapsed = rs_total_elapsed + elapsed
+                #print(bcolors.OKBLUE+"\b...Completed in "+display_time(int(elapsed))+bcolors.ENDC+"\n")
+                sys.stdout.write(ERASE_LINE)
+                print(bcolors.OKBLUE+"\nScan Completed in "+display_time(int(elapsed))+bcolors.ENDC, end='\r', flush=True)
+                print("\n")
+                #clear()
+                rs_tool_output_file = open(temp_file).read()
+                if tool_status[tool][arg2] == 0:
+                    if tool_status[tool][arg1].lower() in rs_tool_output_file.lower():
+                        #print "\t"+ vul_info(tool_resp[tool][arg2]) + bcolors.BADFAIL +" "+ tool_resp[tool][arg1] + bcolors.ENDC
+                        vul_remed_info(tool,tool_resp[tool][arg2],tool_resp[tool][arg3])
+                        rs_vul_list.append(tool_names[tool][arg1]+"*"+tool_names[tool][arg2])
+                else:
+                    if any(i in rs_tool_output_file for i in tool_status[tool][arg6]):
+                        m = 1 # This does nothing.
+                    else:
+                        #print "\t"+ vul_info(tool_resp[tool][arg2]) + bcolors.BADFAIL +" "+ tool_resp[tool][arg1] + bcolors.ENDC
+                        vul_remed_info(tool,tool_resp[tool][arg2],tool_resp[tool][arg3])
+                        rs_vul_list.append(tool_names[tool][arg1]+"*"+tool_names[tool][arg2])
+        else:
+                runTest = 1
+                spinner.stop()
+                scan_stop = time.time()
+                elapsed = scan_stop - scan_start
+                rs_total_elapsed = rs_total_elapsed + elapsed
+                #sys.stdout.write(CURSOR_UP_ONE) 
+                sys.stdout.write(ERASE_LINE)
+                #print("-" * terminal_size(), end='\r', flush=True)
+                print(bcolors.OKBLUE+"\nScan Interrupted in "+display_time(int(elapsed))+bcolors.ENDC, end='\r', flush=True)
+                print("\n"+bcolors.WARNING + "\tTest Skipped. Performing Next. Press Ctrl+Z to Quit RapidScan.\n" + bcolors.ENDC)
+                rs_skipped_checks = rs_skipped_checks + 1
+
+        tool=tool+1
+
+    print(bcolors.BG_ENDL_TXT+"[ Preliminary Scan Phase Completed. ]"+bcolors.ENDC)
+    print("\n")
+
+    #################### Report & Documentation Phase ###########################
+    date = subprocess.Popen(["date", "+%Y-%m-%d"],stdout=subprocess.PIPE).stdout.read()[:-1].decode("utf-8")
+    debuglog = "rs.dbg.%s.%s" % (target, date) 
+    vulreport = "rs.vul.%s.%s" % (target, date)
+    print(bcolors.BG_HEAD_TXT+"[ Report Generation Phase Initiated. ]"+bcolors.ENDC)
+    if len(rs_vul_list)==0:
+        print("\t"+bcolors.OKGREEN+"No Vulnerabilities Detected."+bcolors.ENDC)
+    else:
+        with open(vulreport, "a") as report:
+            while(rs_vul < len(rs_vul_list)):
+                vuln_info = rs_vul_list[rs_vul].split('*')
+                report.write(vuln_info[arg2])
+                report.write("\n------------------------\n\n")
+                temp_report_name = "/tmp/rapidscan_temp_"+vuln_info[arg1]
+                with open(temp_report_name, 'r') as temp_report:
+                    data = temp_report.read()
+                    report.write(data)
+                    report.write("\n\n")
+                temp_report.close()
+                rs_vul = rs_vul + 1
+
+            print("\tComplete Vulnerability Report for "+bcolors.OKBLUE+target+bcolors.ENDC+" named "+bcolors.OKGREEN+vulreport+bcolors.ENDC+" is available under the same directory RapidScan resides.")
+
+        report.close()
+    # Writing all scan files output into RS-Debug-ScanLog for debugging purposes.
+    for file_index, file_name in enumerate(tool_names):
+        with open(debuglog, "a") as report:
+            try:
+                with open("/tmp/rapidscan_temp_"+file_name[arg1], 'r') as temp_report:
+                        data = temp_report.read()
+                        report.write(file_name[arg2])
+                        report.write("\n------------------------\n\n")
+                        report.write(data)
+                        report.write("\n\n")
+                temp_report.close()
+            except:
+                break
+        report.close()
+
+    print("\tTotal Number of Vulnerability Checks        : "+bcolors.BOLD+bcolors.OKGREEN+str(len(tool_names))+bcolors.ENDC)
+    print("\tTotal Number of Vulnerability Checks Skipped: "+bcolors.BOLD+bcolors.WARNING+str(rs_skipped_checks)+bcolors.ENDC)
+    print("\tTotal Number of Vulnerabilities Detected    : "+bcolors.BOLD+bcolors.BADFAIL+str(len(rs_vul_list))+bcolors.ENDC)
+    print("\tTotal Time Elapsed for the Scan             : "+bcolors.BOLD+bcolors.OKBLUE+display_time(int(rs_total_elapsed))+bcolors.ENDC)
+    print("\n")
+    print("\tFor Debugging Purposes, You can view the complete output generated by all the tools named "+bcolors.OKBLUE+debuglog+bcolors.ENDC+" under the same directory.")
+    print(bcolors.BG_ENDL_TXT+"[ Report Generation Phase Completed. ]"+bcolors.ENDC)
+
+    os.system('setterm -cursor on')
+    os.system('rm /tmp/rapidscan_te* > /dev/null 2>&1') # Clearing previous scan files
