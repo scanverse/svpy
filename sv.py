@@ -1362,3 +1362,10 @@ def get_parser():
     parser.add_argument('target', nargs='?', metavar='URL', help='URL to scan.', default='', type=str)
     return parser
 
+# Shuffling Scan Order (starts)
+scan_shuffle = list(zip(tool_names, tool_cmd, tool_resp, tool_status))
+random.shuffle(scan_shuffle)
+tool_names, tool_cmd, tool_resp, tool_status = zip(*scan_shuffle)
+tool_checks = (len(tool_names) + len(tool_resp) + len(tool_status)) / 3 # Cross verification incase, breaks.
+tool_checks = round(tool_checks)
+# Shuffling Scan Order (ends)
