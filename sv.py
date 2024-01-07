@@ -112,3 +112,18 @@ def vul_info(val):
     else:
         result = bcolors.BG_INFO_TXT+" info "+bcolors.ENDC
     return result
+
+# Legends
+proc_high = bcolors.BADFAIL + "●" + bcolors.ENDC
+proc_med  = bcolors.WARNING + "●" + bcolors.ENDC
+proc_low  = bcolors.OKGREEN + "●" + bcolors.ENDC
+
+# Links the vulnerability with threat level and remediation database
+def vul_remed_info(v1,v2,v3):
+    print(bcolors.BOLD+"Vulnerability Threat Level"+bcolors.ENDC)
+    print("\t"+vul_info(v2)+" "+bcolors.WARNING+str(tool_resp[v1][0])+bcolors.ENDC)
+    print(bcolors.BOLD+"Vulnerability Definition"+bcolors.ENDC)
+    print("\t"+bcolors.BADFAIL+str(tools_fix[v3-1][1])+bcolors.ENDC)
+    print(bcolors.BOLD+"Vulnerability Remediation"+bcolors.ENDC)
+    print("\t"+bcolors.OKGREEN+str(tools_fix[v3-1][2])+bcolors.ENDC)
+
