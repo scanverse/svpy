@@ -12,3 +12,19 @@
 # Description: This scanner automates the process of security scanning by using a
 #              multitude of available linux security tools and some custom scripts.
 #
+
+# Importing the libraries
+import sys
+import argparse
+import subprocess
+import os
+import time
+import random
+import threading
+import re
+import random
+from urllib.parse import urlsplit
+
+
+CURSOR_UP_ONE = '\x1b[1A' 
+ERASE_LINE = '\x1b[2K'
