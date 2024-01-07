@@ -97,3 +97,18 @@ class bcolors:
     BG_SCAN_TXT_START = '\x1b[6;30;42m'
     BG_SCAN_TXT_END   = '\x1b[0m'
 
+
+# Classifies the Vulnerability's Severity
+def vul_info(val):
+    result =''
+    if val == 'c':
+        result = bcolors.BG_CRIT_TXT+" critical "+bcolors.ENDC
+    elif val == 'h':
+        result = bcolors.BG_HIGH_TXT+" high "+bcolors.ENDC
+    elif val == 'm':
+        result = bcolors.BG_MED_TXT+" medium "+bcolors.ENDC
+    elif val == 'l':
+        result = bcolors.BG_LOW_TXT+" low "+bcolors.ENDC
+    else:
+        result = bcolors.BG_INFO_TXT+" info "+bcolors.ENDC
+    return result
